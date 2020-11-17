@@ -16,7 +16,7 @@ def convert(string):
 
 
 client = commands.Bot(command_prefix="sudo ")
-token = "Nzc1MzMyNDQ4NjI3NzIwMjMy.X6kynA.CFT9hzBShYnmsTpU_I916D3m_2o"#super secret
+token = "super secret...token..."
 
 main_role = "Everyone" #change to verified.
 
