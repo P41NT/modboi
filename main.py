@@ -45,4 +45,4 @@ async def unmute(ctx, member: discord.Member, *, time=None, reason=None):
             await member.remove_role(role)
             await ctx.send(f"Unmuted {member}")
 
-client.run("Nzc1MzMyNDQ4NjI3NzIwMjMy.X6kynA.ox9IstqIwpzo7Y1nSHFA8xLBOUQ")
+client.run("token")
