@@ -4,7 +4,7 @@ import asyncio
 from discord.ext.commands import has_permissions
 
 #++++++++++++++++++++PARAMETERS+++++++++++++++++
-token = "token...supe sercret, i wont share hehe"
+token = "supersecret.."
 command_prefix = "sudo "
 main_role = "Everyone" #change to verified.
 announcement_ping = "Oppressors"
@@ -56,6 +56,15 @@ def dm_toggle():
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
 #++++++++++++++++++++++EVENTS++++++++++++++++++++++
+
+@client.event
+async def on_command_error(ctx, error):
+    if isinstance(error, discord.ext.commands.errors.CommandNotFound):
+      await ctx.send("That command wasn't found! Sorry :(")
+    if isinstance(error, discord.ext.commands.errors.MissingRequiredArgument):
+      await ctx.send("You missed some argument I guess")
+      
+
 @client.listen('on_message')
 async def filter(message):
   if message.author == client.user: return
@@ -97,10 +106,7 @@ async def hi(ctx):
 
 #==============DM TOGGLE===================
 
-@client.command()
-@has_permissions(kick_members=True)
-def toggleDM():
-  dm_toggle()
+
 
 #==============KICK========================
 
@@ -190,13 +196,12 @@ async def unmute(ctx, member: discord.Member):
 async def announce(ctx, channel, *, message):
   try:
     channel = channel[2:-1]
-    print(channel)
     announce_channel = client.get_channel(int(channel))
     for role in ctx.author.guild.roles:
       if role.name == announcement_ping:
         await announce_channel.send(f"<@&{role.id}> {message}")
   except:
-    ctx.send("some error occured. try again.")
+    await message.channel.send("Some error occured. try again.")
 #++++++++++++++++++RUNNING++++++++++++++++++++++
 
 client.run(token) 
