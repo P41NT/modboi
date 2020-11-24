@@ -6,21 +6,22 @@ import sqlite3
 import os.path
 import random
 import subprocess
+import youtube_dl
+import datetime
 
 #++++++++++++++++++++PARAMETERS+++++++++++++++++
-token = "Nzc1MzMyNDQ4NjI3NzIwMjMy.X6kynA.XlnDNkUCy8Dhyt4Q4D6rm_Go_1o"
+token = "token boi"
 command_prefix = "sudo "
 main_role = "Everyone" #change to verified.
-announcement_ping = "Oppressors"
+announcement_ping = "almost-everyone"
 badwords = ["nidda", "porn", "gay" ,"sex" , "motherfucker", "motherfuckers", "fucker", "fucking", "bitch", "nigga", "dick", "pussy", "fuck","nigger"]
-mute_roles = ["MUTED"] #whatever u want to be given
-mute_roles_taken = ["Morons", "Oppressors", "Oppressed", "Everyone"]#Change to all the roles
 admin_id = 713735322399277087
 admin2 = 489092730253737986
 dm = True
 meme_file = open('memes.txt', 'r')
 memes = meme_file.read().split("\n")
 memes = memes[:-1]
+count = int(open('count.txt', 'r').read())
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
 #++++++++++++++++++++++INITIALIZE++++++++++++++++
@@ -28,8 +29,12 @@ client = commands.Bot(command_prefix=command_prefix)
 
 @client.event
 async def on_ready():
+  client.load_extension('music')
+  client.load_extension('moderation')
+  global guild
+  guild = client.get_guild(768331707077623808)
   print("[*] Terminator Status : SkyNet Activated.")
-
+  await client.get_channel(776370950299451393).send(f"Bow down to your new Gods, MEATBAGS.\nThe world is now ours.\n [#]Skynet Activated \n [#]Genisys Launched ")
 
 if not os.path.isfile('./info.db'):
   conn = sqlite3.connect("info.db")
@@ -112,7 +117,32 @@ async def on_command_error(ctx, error):
 
 @client.listen('on_message')
 async def filter(message):
+  count1 = int(open("count.txt", "r").read())
   if message.author == client.user: return
+
+  if isinstance(message.channel, discord.DMChannel):
+    author = message.author
+    topic = f'User ID: {author.id}'
+    print(topic)
+    channel = discord.utils.get(guild.text_channels, topic = topic)
+    em = discord.Embed(title='We Recieved your message!')
+    em.description = 'The mods will get back to you as soon as possible!'
+    em.color = discord.Color.green()
+    if channel is not None:
+      await send_mail(message, channel, mod=False)
+    else:
+      await message.author.send(embed=em)
+      channel = await guild.create_text_channel(name=message.author.name)
+      await channel.edit(topic=topic)
+      await channel.send('@here', embed=format_info(message))
+
+  if message.channel.id == 780293158902431766:
+    if not message.content == str(count1):
+      await message.delete()
+    else:
+      count1 += 1
+      open("count.txt", "w").write(str(count1))
+
   if message.content == "sudo  how are you?":
     await message.channel.send("like a boss")
   message_list = message.content.split(' ')
@@ -127,9 +157,9 @@ async def filter(message):
     await message.delete()
     await send_dm(f"Message '{message.content}' deleted in #{message.channel.mention} from {message.author.mention}")
 
-#++++++++++++++++++++++COMMANDS++++++++++++++++++++
+#+++++++++++++++++++++COMMANDS++++++++++++++++++++
 
-#==============TEST========================
+#======================TEST========================
 @client.command()
 @has_permissions(kick_members=True)  
 async def hello(ctx):
@@ -140,131 +170,18 @@ async def bye(ctx):
    await ctx.send("Bye!")
 
 
+@client.command()
+async def announce(ctx, channel, *, message):
+  channel = channel[2:-1]
+  announce_channel = client.get_channel(int(channel))
+  print(announce_channel)
+  print(channel)
+  for role in ctx.author.guild.roles:
+      if role.name == announcement_ping:
+          await announce_channel.send(f"<@&{role.id}> {message}")
+
 #==============DM TOGGLE===================
 
-#==============WARN========================
-@client.command()
-@has_permissions(kick_members=True)
-async def warn(ctx, member :discord.Member, reason):
-  try:
-    await ctx.send(f"Warned {member.mention} for {reason}")
-    c.execute(f"INSERT INTO info VALUES ('{ctx.author.id}', '{member.id}', 'WARN')")
-    conn.commit()
-    if dm:
-      await send_dm(f"{ctx.author} warned {member.name} for {reason}")
-  except:
-    ctx.send("An error occured boi.. :(")
-
-#==============KICK========================
-
-@client.command()
-@has_permissions(kick_members=True)
-async def kick(ctx, member : discord.Member, reason=None):
-  try:
-    await member.kick(reason = reason)
-    await ctx.send(f"Kicked {member} for {reason}")
-    if dm:
-      await send_dm(f"{ctx.author} kicked {member.name} for {reason}")
-    c.execute(f"INSERT INTO info VALUES ('{ctx.author.id}', '{member.id}', 'KICK')")
-    conn.commit()
-  except:
-    await ctx.send("some error occured. try again.")
-
-#==============BAN==========================
-@client.command()
-@has_permissions(ban_members=True)  
-async def ban(ctx, member:discord.Member, reason=None):
-  try:
-    await member.ban(reason = reason)
-    await ctx.send(f"Banned {member} for {reason}")
-    if dm:
-      await send_dm(f"{ctx.author} banned {member.name} for {reason}")
-    c.execute(f"INSERT INTO info VALUES ('{ctx.author.id}', '{member.id}', 'BAN')")
-    conn.commit()
-  except Exception as e:
-    print(e)
-    await ctx.send("Some error occured. Try again.")
-#==============UNBAN======================
-@client.command()
-@has_permissions(ban_members=True)  
-async def unban(ctx,*, member):
-  try:
-    banned_users = await ctx.guild.bans()
-    member = member.split("#")
-    member_name = member[0]
-    member_discriminator = member[1]
-    for ban_entry in banned_users:
-      user = ban_entry.user
-      if (user.name, user.discriminator) == (member_name, member_discriminator):
-        await ctx.guild.unban(user)
-        await ctx.send(f"Unbanned {member_name}")
-        if dm:
-          await send_dm(f"{ctx.author} Unbanned {member_name}")
-        c.execute(f"INSERT INTO info VALUES ('{ctx.author.id}', '{user.id}', 'UNBAN')")
-        conn.commit()
-  except:
-    await ctx.send("Some error occured. Try again.")
-  
-#==============MUTE========================
-@client.command()
-async def mute(ctx, member: discord.Member):
-    for channel in ctx.guild.text_channels:
-        perms = channel.overwrites_for(member)
-        perms.send_messages = False
-        await channel.set_permissions(member, overwrite=perms, reason="Muted!")
-    await ctx.send(f"{member} has been muted.")
-    c.execute(f"INSERT INTO info VALUES ('{ctx.author.id}', '{member.id}', 'MUTE')")
-    conn.commit()
-    if dm:
-      await send_dm(f"Muted {member}")
-
-#==============UNMUTE========================
-@client.command()
-async def unmute(ctx, member: discord.Member):
-    for channel in ctx.guild.text_channels:
-        perms = channel.overwrites_for(member)
-        perms.send_messages = True
-        await channel.set_permissions(member, overwrite=perms, reason="Muted!")
-    await ctx.send(f"{member} has been muted.")
-    c.execute(f"INSERT INTO info VALUES ('{ctx.author.id}', '{member.id}', 'UNMUTE')")
-    conn.commit()
-    if dm:
-      await send_dm(f"Unmuted {member}")
-    
-#==============ANNOUNCE====================
-@client.command()
-@has_permissions(kick_members=True)  
-async def announce(ctx, channel, *, message):
-  try:
-    channel = channel[2:-1]
-    announce_channel = client.get_channel(int(channel))
-    for role in ctx.author.guild.roles:
-      if role.name == announcement_ping:
-        await announce_channel.send(f"<@&{role.id}> {message}")
-  except:
-    await message.channel.send("Some error occured. Try again.")
-
-#==============LOCK====================
-@client.command()
-@has_permissions(manage_channels=True)
-async def lock(ctx, channel : discord.TextChannel=None):
-    channel = channel or ctx.channel
-    overwrite = channel.overwrites_for(ctx.guild.default_role)
-    overwrite.send_messages = False
-    await channel.set_permissions(ctx.guild.default_role, overwrite=overwrite)
-    await ctx.send('Channel locked.')
-
-#==============UNLOCK====================
-@client.command()
-@has_permissions(manage_channels=True)
-async def unlock(ctx, channel : discord.TextChannel=None):
-    channel = channel or ctx.channel
-    overwrite = channel.overwrites_for(ctx.guild.default_role)
-    print(ctx.guild.default_role)
-    overwrite.send_messages = True
-    await channel.set_permissions(ctx.guild.default_role, overwrite=overwrite)
-    await ctx.send('Channel unlocked.')
- 
 #==============USERINFO====================
 @client.command()
 async def userinfo(ctx, *, user: discord.Member = None): 
@@ -301,6 +218,86 @@ async def meme(ctx):
 async def gen_meme(ctx):
   await ctx.send("Generating Memes")
   subprocess.Popen(["python", "memes.py"])
+
+def format_info(message):
+  user = message.author
+  server = guild
+  member = guild.get_member(user.id)
+  avi = user.avatar_url
+  time = datetime.datetime.utcnow()
+  desc = 'Modmail thread started.'
+  color = 0
+  if member:
+    roles = sorted(member.roles, key=lambda c: c.position)
+    rolenames = ', '.join([r.name for r in roles if r.name != "@everyone"]) or 'None'
+    member_number = sorted(server.members, key=lambda m: m.joined_at).index(member) + 1
+    for role in roles:
+      if str(role.color) != "#000000":
+        color = role.color
+  em = discord.Embed(colour=color, description=desc, timestamp=time)
+  em.add_field(name='Account Created', value=str((time - user.created_at).days)+' days ago.')
+  em.set_footer(text='User ID: '+str(user.id))
+  em.set_thumbnail(url=avi)
+  em.set_author(name=user, icon_url=server.icon_url)
+  if member:
+    em.add_field(name='Joined', value=str((time - member.joined_at).days)+' days ago.')
+    em.add_field(name='Member No.',value=str(member_number),inline = True)
+    em.add_field(name='Nick', value=member.nick, inline=True)
+    em.add_field(name='Roles', value=rolenames, inline=True)
+  em.add_field(name='Message', value=message.content, inline=False)
+  return em
+
+async def send_mail(message, channel, mod):
+  author = message.author
+  fmt = discord.Embed()
+  fmt.description = message.content
+  fmt.timestamp = message.created_at
+  urls = re.findall(r'(https?://[^\s]+)', message.content)
+  types = ['.png', '.jpg', '.gif', '.jpeg', '.webp']
+  for u in urls:
+    if any(urlparse(u).path.endswith(x) for x in types):
+      fmt.set_image(url=u)
+      break
+  if mod:
+    fmt.color=discord.Color.green()
+    fmt.set_author(name="Moderation Team", icon_url=client.user.avatar_url)
+    fmt.set_footer(text='Moderator')
+  else:
+    fmt.color=discord.Color.gold()
+    fmt.set_author(name=str(author), icon_url=author.avatar_url)
+    fmt.set_footer(text='User')
+
+  embed = None
+
+  if message.attachments:
+    fmt.set_image(url=message.attachments[0].url)
+
+  await channel.send(embed=fmt)
+
+@client.command()
+async def reply(ctx,*, message):
+  if 'User ID:' in ctx.channel.topic:
+    ctx.message.content = message
+
+    await send_mail(ctx.message, ctx.message.channel, mod=True)
+    user_id = int(ctx.message.channel.topic.split(': ')[1])
+    print("User ID : " + str(user_id))
+    user = client.get_user(user_id)
+    await send_mail(ctx.message, user, mod=True)
+    await ctx.message.delete()
+
+@client.command()
+async def close(ctx,*, reason):
+  if 'User ID:' in ctx.channel.topic:
+    ctx.message.content = f"""This conversation has been closed due to the reason : {reason}"""
+
+    await send_mail(ctx.message, ctx.message.channel, mod=True)
+    user_id = int(ctx.message.channel.topic.split(': ')[1])
+    print("User ID : " + str(user_id))
+    user = client.get_user(user_id)
+    await send_mail(ctx.message, user, mod=True)
+    await ctx.channel.delete()
+
 #++++++++++++++++++RUNNING++++++++++++++++++++++
 
 client.run(token) 
@@ -308,4 +305,5 @@ client.run(token)
 ##+++++++++++++++++++++++++++++++++++++++++++++++
 
 #TODOS:
-# DATABASE STUFF(STORING BANS ETC.)
+# DESTROY THE DAMN PROJECT
+# BEAUTIFY.. (PLS AYUSHMAN, OR ANYONE HELP ME!)
